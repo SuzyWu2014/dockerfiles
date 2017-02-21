@@ -1,0 +1,85 @@
+version: '2'
+services:
+  server1:
+    image: "consul"
+    hostname: "server1"
+    container_name: "server1"
+    command: "agent -server -bootstrap-expect 3"
+
+  server2:
+    image: "consul"
+    hostname: "server2"
+    container_name: "server2"
+    command: "agent -server -join server1"
+    links:
+      - server1
+
+  server3:
+    image: "consul"
+    hostname: "server3"
+    container_name: "server3"
+    command: "agent -server -join server1"
+    links:
+      - server1
+
+  locations-api:
+    build:
+      context: ./locations-api
+    hostname: "agent1-locations-api"
+    container_name: locations-api
+    command: "server1"
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "53:53"
+      - "8300:8300"
+      - "8301:8301"
+      - "8302:8302"
+      - "8400:8400"
+      - "8500:8500"
+      - "53/udp:53/udp"
+      - "8301/udp:8301/udp"
+      - "8302/udp:8302/udp"
+    links:
+      - elasticsearch
+      - server1
+      - server2
+      - server3
+    volumes:
+      - ./path/to/keystore.keystore:/home/api/locations-frontend-api/keystore.keystore
+      - ./path/to/truststore.truststore:/home/api/locations-frontend-api/truststore.truststore
+      - ./path/to/configuration.yaml:/home/api/locations-frontend-api/configuration.yaml
+
+  elasticsearch:
+    image: elasticsearch:latest
+    container_name: elasticsearch
+    command: elasticsearch
+    ports:
+      - "9201:9200"
+      - "9301:9300"
+  locations-frontend-api:
+    build:
+      context: ./locations-frontend-api
+    hostname: "agent2-locations-frontend-api"
+    container_name: locations-frontend-api
+    command: "server1"
+    ports:
+      - "8788:8080"
+      - "8789:8081"
+      - "153:53"
+      - "8310:8300"
+      - "8311:8301"
+      - "8312:8302"
+      - "8410:8400"
+      - "153/udp:53/udp"
+      - "8311/udp:8301/udp"
+      - "8312/udp:8302/udp"
+    links:
+      - elasticsearch
+      - server1
+      - server2
+      - server3
+    volumes:
+      - ./path/to/keystore.keystore:/home/api/locations-frontend-api/keystore.keystore
+      - ./path/to/truststore.truststore:/home/api/locations-frontend-api/truststore.truststore
+      - ./path/to/configuration.yaml:/home/api/locations-frontend-api/configuration.yaml
